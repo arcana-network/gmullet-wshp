@@ -15,7 +15,6 @@ import { useWallet } from "../hooks/useWallet";
 import { createConfig, WagmiProvider } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { injected } from "wagmi/connectors";
-import { CAProvider } from "@arcana/ca-wagmi";
 
 interface WalletContextType {
   account: string | null;
@@ -51,9 +50,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <CAProvider>
-          <Wrap>{children}</Wrap>
-        </CAProvider>
+        <Wrap>{children}</Wrap>
       </QueryClientProvider>
     </WagmiProvider>
   );
