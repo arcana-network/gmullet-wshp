@@ -8,13 +8,7 @@ import WalletConnect from "./components/wallet-connect";
 import { Loader2 } from "lucide-react";
 import { GMULLET_ABI, GMULLET_CONTRACT_ADDRESS } from "./contracts/GMulletNFT";
 import { toast } from "sonner";
-import {
-  useChainId,
-  useChains,
-  useWaitForTransactionReceipt,
-  useClient,
-  useWriteContract,
-} from "wagmi";
+import { useClient, useWriteContract } from "wagmi";
 import { parseEther } from "viem";
 import { waitForTransactionReceipt } from "viem/actions";
 
@@ -37,13 +31,9 @@ const App: React.FC = () => {
   const isMintDisabled = !account || hasInsufficientBalance || isLoading;
 
   const { writeContract } = useWriteContract();
-  const receipt = useWaitForTransactionReceipt({ hash: "0x" });
   const handleMint = async () => {
     if (!window.ethereum || !account) return;
-    let hash = "0x";
     try {
-      //getCA
-
       setIsMinting(true);
 
       writeContract(
