@@ -48,20 +48,23 @@ const config = createConfig({
 const queryClient = new QueryClient();
 
 export function WalletProvider({ children }: { children: React.ReactNode }) {
-  const wallet = useWallet();
-
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <CAProvider>
-          <WalletContext.Provider value={wallet}>
-            {children}
-          </WalletContext.Provider>
+          <Wrap>{children}</Wrap>
         </CAProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );
 }
+
+const Wrap = ({ children }: { children: React.ReactNode }) => {
+  const wallet = useWallet();
+  return (
+    <WalletContext.Provider value={wallet}>{children}</WalletContext.Provider>
+  );
+};
 
 export function useWalletContext() {
   const context = useContext(WalletContext);
