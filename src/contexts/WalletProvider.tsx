@@ -2,7 +2,15 @@
 
 import { createContext, useContext } from "react";
 import { http } from "viem";
-import { scroll, base, arbitrum, optimism, polygon, linea } from "viem/chains";
+import {
+  mainnet,
+  scroll,
+  base,
+  arbitrum,
+  optimism,
+  polygon,
+  linea,
+} from "viem/chains";
 import { useWallet } from "../hooks/useWallet";
 import { createConfig, WagmiProvider } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -25,6 +33,7 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined);
 const config = createConfig({
   chains: [scroll],
   transports: {
+    [mainnet.id]: http(),
     [scroll.id]: http(),
     [base.id]: http(),
     [arbitrum.id]: http(),

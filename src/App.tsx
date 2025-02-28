@@ -8,15 +8,22 @@ import WalletConnect from "./components/wallet-connect";
 import { Loader2 } from "lucide-react";
 import { GMULLET_ABI, GMULLET_CONTRACT_ADDRESS } from "./contracts/GMulletNFT";
 import { toast } from "sonner";
-import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import {
+  useChainId,
+  useChains,
+  useWaitForTransactionReceipt,
+  useClient,
+  useWriteContract,
+} from "wagmi";
 import { parseEther } from "viem";
+import { waitForTransactionReceipt } from "viem/actions";
 
 const App: React.FC = () => {
   const [nftPrice] = useState<number>(0.0005); // ETH price
   const { account, balance, isConnecting, isBalanceLoading, updateBalance } =
     useWalletContext();
   const [isMinting, setIsMinting] = useState(false);
-
+  const client = useClient();
   //Intent Code
 
   // Don't show any balance-related messages while loading
@@ -33,7 +40,7 @@ const App: React.FC = () => {
   const receipt = useWaitForTransactionReceipt({ hash: "0x" });
   const handleMint = async () => {
     if (!window.ethereum || !account) return;
-
+    let hash = "0x";
     try {
       //getCA
 
@@ -48,31 +55,39 @@ const App: React.FC = () => {
           account: account as `0x${string}`,
         },
         {
-          onSuccess: (hash) => {
+          onSuccess: async (hash) => {
             toast.loading("Minting your GMullet NFT...", {
               id: hash,
             });
-            // Wait for transaction to be mined
-            console.log("receipt", receipt);
+            // Update balance after successful mint
+            await updateBalance(account);
+
+            if (client) {
+              // Wait for transaction to be mined
+              const receipt = await waitForTransactionReceipt(client, {
+                hash,
+              });
+
+              // Show success toast
+              toast.success("Successfully minted your GMullet NFT!", {
+                id: hash,
+              });
+
+              // Add link to transaction
+              toast.message("View on ScrollScan", {
+                action: {
+                  label: "View",
+                  onClick: () =>
+                    window.open(
+                      `https://scrollscan.com/tx/${receipt.transactionHash}`,
+                      "_blank"
+                    ),
+                },
+              });
+            }
           },
         }
       );
-
-      // Update balance after successful mint
-      await updateBalance(account);
-
-      // Show success toast
-      //toast.success("Successfully minted your GMullet NFT!", {
-      //  id: hash,
-      //});
-
-      // Add link to transaction
-      // toast.message("View on ScrollScan", {
-      //   action: {
-      //     label: "View",
-      //     onClick: () => window.open(`https://scrollscan.com/tx/${receipt.hash}`, '_blank'),
-      //   },
-      // });
     } catch (error: any) {
       console.error("Minting error:", error);
       toast.error(error.message || "Failed to mint NFT");
