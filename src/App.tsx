@@ -2,56 +2,49 @@ import "./App.css";
 import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
 import React, { useState } from "react";
-import { useWalletContext } from "./contexts/WalletProvider";
 import WalletConnect from "./components/wallet-connect";
-
+import { NFT_PRICE } from "./lib/utils";
 import { Loader2 } from "lucide-react";
 import { GMULLET_ABI, GMULLET_CONTRACT_ADDRESS } from "./contracts/GMulletNFT";
 import { toast } from "sonner";
-import { useClient, useWriteContract } from "wagmi";
-import { parseEther } from "viem";
+import { useAccount, useBalance, useClient, useWriteContract } from "wagmi";
+import { formatEther, parseEther } from "viem";
 import { waitForTransactionReceipt } from "viem/actions";
 
 const App: React.FC = () => {
-  const [nftPrice] = useState<number>(0.0005); // ETH price
-  const { account, balance, isConnecting, isBalanceLoading, updateBalance } =
-    useWalletContext();
+  const { status, address } = useAccount();
+  const balance = useBalance();
   const [isMinting, setIsMinting] = useState(false);
   const client = useClient();
-  //Intent Code
+  const isConnecting = ["connecting", "reconnecting"].includes(status);
+  const isLoading = isConnecting || balance.isFetching || isMinting;
 
-  // Don't show any balance-related messages while loading
-  const isLoading = isConnecting || isBalanceLoading || isMinting;
-
-  // Only check balance after loading is complete
   const hasInsufficientBalance =
-    !isLoading && account && parseFloat(balance) < nftPrice;
+    !isLoading &&
+    address &&
+    parseFloat(formatEther(balance.data?.value ?? 0n)) < NFT_PRICE;
 
-  // Button should be disabled during loading or if requirements aren't met
-  const isMintDisabled = !account || hasInsufficientBalance || isLoading;
+  const isMintDisabled = !address || hasInsufficientBalance || isLoading;
 
   const { writeContract } = useWriteContract();
   const handleMint = async () => {
-    if (!window.ethereum || !account) return;
+    if (!window.ethereum || !address) return;
     try {
       setIsMinting(true);
-
       writeContract(
         {
           address: GMULLET_CONTRACT_ADDRESS,
           abi: GMULLET_ABI,
-          functionName: "mint",
-          value: parseEther(nftPrice.toString()),
-          account: account as `0x${string}`,
+          functionName: "claim",
+          value: parseEther(NFT_PRICE.toString()),
+          account: address as `0x${string}`,
+          args: [],
         },
         {
           onSuccess: async (hash) => {
             toast.loading("Minting your GMullet NFT...", {
               id: hash,
             });
-            // Update balance after successful mint
-            await updateBalance(account);
-
             if (client) {
               // Wait for transaction to be mined
               const receipt = await waitForTransactionReceipt(client, {
@@ -78,9 +71,13 @@ const App: React.FC = () => {
           },
         }
       );
-    } catch (error: any) {
+    } catch (error) {
       console.error("Minting error:", error);
-      toast.error(error.message || "Failed to mint NFT");
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to mint NFT");
+      }
     } finally {
       setIsMinting(false);
     }
@@ -96,7 +93,7 @@ const App: React.FC = () => {
       );
     }
 
-    if (!account) {
+    if (!address) {
       return (
         <div className="mt-4 text-center text-gray-500 text-sm">
           Connect wallet to mint
@@ -144,7 +141,7 @@ const App: React.FC = () => {
                 </div>
                 <Input
                   type="text"
-                  value={`${nftPrice.toFixed(4)} ETH`}
+                  value={`${NFT_PRICE.toFixed(5)} ETH`}
                   className="bg-gray-50"
                   readOnly
                 />

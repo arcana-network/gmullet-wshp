@@ -1,6 +1,5 @@
 "use client";
 
-import { useWalletContext } from "../contexts/WalletProvider";
 import { Button } from "../components/ui/button";
 import {
   DropdownMenu,
@@ -9,25 +8,42 @@ import {
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
 import { Copy, ChevronDown, LogOut } from "lucide-react";
+import { useAccount, useBalance, useConnect, useDisconnect } from "wagmi";
+import { injected } from "wagmi/connectors";
+import { formatEther } from "viem";
+
+const chainId = 10;
 
 export default function WalletConnect() {
-  const { account, balance, isConnecting, connectWallet, disconnectWallet } =
-    useWalletContext();
+  const { connect } = useConnect();
+  const { disconnect } = useDisconnect();
+  const { status, address } = useAccount();
+  const balance = useBalance({ address });
 
   const handleCopy = () => {
-    if (account) {
-      navigator.clipboard.writeText(account);
+    if (address) {
+      navigator.clipboard.writeText(address);
     }
   };
 
-  if (!account) {
+  if (status === "reconnecting") {
     return (
       <Button
-        onClick={connectWallet}
-        disabled={isConnecting}
+        disabled={true}
         className="bg-blue-600 text-white hover:bg-blue-700"
       >
-        {isConnecting ? "Connecting..." : "Connect Wallet"}
+        Reconnecting
+      </Button>
+    );
+  }
+
+  if (status === "disconnected" || address === undefined) {
+    return (
+      <Button
+        onClick={() => connect({ connector: injected(), chainId })}
+        className="bg-blue-600 text-white hover:bg-blue-700"
+      >
+        Connect Wallet
       </Button>
     );
   }
@@ -35,14 +51,14 @@ export default function WalletConnect() {
   return (
     <div className="flex items-center gap-4">
       <div className="text-sm text-gray-600">
-        {parseFloat(balance).toFixed(5)} ETH
+        {formatEther(balance.data?.value ?? 0n)} ETH
       </div>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-green-500" />
-            {`${account.slice(0, 6)}...${account.slice(-4)}`}
+            {`${address.slice(0, 6)}...${address.slice(-4)}`}
             <ChevronDown className="w-4 h-4" />
           </Button>
         </DropdownMenuTrigger>
@@ -51,7 +67,7 @@ export default function WalletConnect() {
             <Copy className="w-4 h-4 mr-2" />
             Copy Address
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={disconnectWallet}>
+          <DropdownMenuItem onClick={() => disconnect()}>
             <LogOut className="w-4 h-4 mr-2" />
             Disconnect
           </DropdownMenuItem>
