@@ -8,9 +8,10 @@ import {
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
 import { Copy, ChevronDown, LogOut } from "lucide-react";
-import { useAccount, useBalance, useConnect, useDisconnect } from "wagmi";
+import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { injected } from "wagmi/connectors";
 import { formatEther } from "viem";
+import { useBalance } from "@arcana/ca-wagmi";
 
 const chainId = 10;
 
@@ -18,7 +19,7 @@ export default function WalletConnect() {
   const { connect } = useConnect();
   const { disconnect } = useDisconnect();
   const { status, address } = useAccount();
-  const balance = useBalance({ address });
+  const balance = useBalance({ symbol: "ETH" });
 
   const handleCopy = () => {
     if (address) {

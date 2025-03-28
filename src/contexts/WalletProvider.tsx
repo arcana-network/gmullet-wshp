@@ -13,7 +13,7 @@ import {
 import { createConfig, WagmiProvider } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { injected } from "wagmi/connectors";
-
+import { CAProvider } from "@arcana/ca-wagmi";
 // Configure wagmi
 const config = createConfig({
   chains: [optimism],
@@ -35,7 +35,9 @@ const queryClient = new QueryClient();
 export function WalletProvider({ children }: { children: React.ReactNode }) {
   return (
     <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <CAProvider network={"dev"}>{children}</CAProvider>
+      </QueryClientProvider>
     </WagmiProvider>
   );
 }

@@ -9,36 +9,37 @@ import { GMULLET_ABI, GMULLET_CONTRACT_ADDRESS } from "./contracts/GMulletNFT";
 import { toast } from "sonner";
 import {
   useAccount,
-  useBalance,
+  // useBalance,
   useClient,
   useSwitchChain,
-  useWriteContract,
+  // useWriteContract,
 } from "wagmi";
 import { formatEther, parseEther } from "viem";
 import { waitForTransactionReceipt } from "viem/actions";
+import { useBalance, useWriteContract } from "@arcana/ca-wagmi";
 
 const App: React.FC = () => {
   const { status, address, chainId } = useAccount();
-  const balance = useBalance({ address });
+  const balance = useBalance({ symbol: "ETH" });
   const [isMinting, setIsMinting] = useState(false);
   const client = useClient();
   const isConnecting = ["connecting", "reconnecting"].includes(status);
-  const isLoading = isConnecting || balance.isFetching || isMinting;
+  const isLoading = isConnecting || balance.loading || isMinting;
   const { switchChain } = useSwitchChain();
+  const hasInsufficientBalance =
+    !isLoading &&
+    address &&
+    parseFloat(formatEther(balance.data?.value ?? 0n)) < NFT_PRICE;
+  const isMintDisabled = !address || hasInsufficientBalance || isLoading;
+  console.log({ isMinting, isLoading, isMintDisabled });
+  const { writeContractAsync } = useWriteContract();
+
   useEffect(() => {
     if (chainId !== 10) {
       switchChain({ chainId: 10 });
     }
   }, []);
-  console.log({ ineg: balance });
-  const hasInsufficientBalance =
-    !isLoading &&
-    address &&
-    parseFloat(formatEther(balance.data?.value ?? 0n)) < NFT_PRICE;
 
-  const isMintDisabled = !address || hasInsufficientBalance || isLoading;
-  console.log({ isMinting, isLoading, isMintDisabled });
-  const { writeContractAsync } = useWriteContract();
   const handleMint = async () => {
     if (!address) return;
     try {
