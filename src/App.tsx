@@ -1,80 +1,102 @@
 import "./App.css";
 import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import WalletConnect from "./components/wallet-connect";
 import { NFT_PRICE } from "./lib/utils";
 import { Loader2 } from "lucide-react";
 import { GMULLET_ABI, GMULLET_CONTRACT_ADDRESS } from "./contracts/GMulletNFT";
 import { toast } from "sonner";
-import { useAccount, useBalance, useClient, useWriteContract } from "wagmi";
+import {
+  useAccount,
+  useBalance,
+  useClient,
+  useSwitchChain,
+  useWriteContract,
+} from "wagmi";
 import { formatEther, parseEther } from "viem";
 import { waitForTransactionReceipt } from "viem/actions";
 
 const App: React.FC = () => {
-  const { status, address } = useAccount();
-  const balance = useBalance();
+  const { status, address, chainId } = useAccount();
+  const balance = useBalance({ address });
   const [isMinting, setIsMinting] = useState(false);
   const client = useClient();
   const isConnecting = ["connecting", "reconnecting"].includes(status);
   const isLoading = isConnecting || balance.isFetching || isMinting;
-
+  const { switchChain } = useSwitchChain();
+  useEffect(() => {
+    if (chainId !== 10) {
+      switchChain({ chainId: 10 });
+    }
+  }, [chainId]);
+  console.log({ ineg: balance });
   const hasInsufficientBalance =
     !isLoading &&
     address &&
     parseFloat(formatEther(balance.data?.value ?? 0n)) < NFT_PRICE;
 
   const isMintDisabled = !address || hasInsufficientBalance || isLoading;
-
-  const { writeContract } = useWriteContract();
+  console.log({ isMinting, isLoading, isMintDisabled });
+  const { writeContractAsync } = useWriteContract();
   const handleMint = async () => {
-    if (!window.ethereum || !address) return;
+    if (!address) return;
     try {
       setIsMinting(true);
-      writeContract(
-        {
-          address: GMULLET_CONTRACT_ADDRESS,
-          abi: GMULLET_ABI,
-          functionName: "claim",
-          value: parseEther(NFT_PRICE.toString()),
-          account: address as `0x${string}`,
-          args: [],
-        },
-        {
-          onSuccess: async (hash) => {
-            toast.loading("Minting your GMullet NFT...", {
-              id: hash,
-            });
-            if (client) {
-              // Wait for transaction to be mined
-              const receipt = await waitForTransactionReceipt(client, {
-                hash,
-              });
-
-              // Show success toast
-              toast.success("Successfully minted your GMullet NFT!", {
-                id: hash,
-              });
-
-              // Add link to transaction
-              toast.message("View on ScrollScan", {
-                action: {
-                  label: "View",
-                  onClick: () =>
-                    window.open(
-                      `https://scrollscan.com/tx/${receipt.transactionHash}`,
-                      "_blank"
-                    ),
-                },
-              });
-            }
+      const hash = await writeContractAsync({
+        address: GMULLET_CONTRACT_ADDRESS,
+        abi: GMULLET_ABI,
+        functionName: "claim",
+        value: parseEther(NFT_PRICE.toString()),
+        account: address as `0x${string}`,
+        args: [
+          address,
+          1n,
+          "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+          50000000000000n,
+          {
+            proof: [],
+            quantityLimitPerWallet: 0n,
+            pricePerToken:
+              115792089237316195423570985008687907853269984665640564039457584007913129639935n,
+            currency: "0x0000000000000000000000000000000000000000",
           },
-        }
-      );
+          "0x",
+        ],
+      });
+      toast.loading("Minting your GMullet NFT...", {
+        id: hash,
+      });
+      if (client) {
+        // Wait for transaction to be mined
+        const receipt = await waitForTransactionReceipt(client, {
+          hash,
+        });
+
+        // Show success toast
+        toast.success("Successfully minted your GMullet NFT!", {
+          id: hash,
+        });
+
+        // Add link to transaction
+        toast.message("View on Optimism Scan", {
+          action: {
+            label: "View",
+            onClick: () =>
+              window.open(
+                `https://optimistic.etherscan.io/tx/${receipt.transactionHash}`,
+                "_blank"
+              ),
+          },
+        });
+      }
     } catch (error) {
-      console.error("Minting error:", error);
+      console.error("Minting error:", { error });
       if (error instanceof Error) {
-        toast.error(error.message);
+        toast.error(
+          // @ts-ignore
+          "shortMessage" in error ? error.shortMessage : error.message
+        );
       } else {
         toast.error("Failed to mint NFT");
       }
