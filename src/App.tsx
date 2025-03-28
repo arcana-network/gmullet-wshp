@@ -29,7 +29,7 @@ const App: React.FC = () => {
     if (chainId !== 10) {
       switchChain({ chainId: 10 });
     }
-  }, [chainId]);
+  }, []);
   console.log({ ineg: balance });
   const hasInsufficientBalance =
     !isLoading &&
