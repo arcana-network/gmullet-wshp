@@ -25,12 +25,7 @@ const App: React.FC = () => {
   const isConnecting = ["connecting", "reconnecting"].includes(status);
   const isLoading = isConnecting || balance.isFetching || isMinting;
   const { switchChain } = useSwitchChain();
-  useEffect(() => {
-    if (chainId !== 10) {
-      switchChain({ chainId: 10 });
-    }
-  }, []);
-  console.log({ ineg: balance });
+ 
   const hasInsufficientBalance =
     !isLoading &&
     address &&
@@ -39,6 +34,13 @@ const App: React.FC = () => {
   const isMintDisabled = !address || hasInsufficientBalance || isLoading;
   console.log({ isMinting, isLoading, isMintDisabled });
   const { writeContractAsync } = useWriteContract();
+
+  useEffect(() => {
+    if (chainId !== 10) {
+      switchChain({ chainId: 10 });
+    }
+  }, []);
+
   const handleMint = async () => {
     if (!address) return;
     try {
