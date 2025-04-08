@@ -24,7 +24,7 @@ const App: React.FC = () => {
   const [isMinting, setIsMinting] = useState(false);
   const client = useClient();
   const isConnecting = ["connecting", "reconnecting"].includes(status);
-  const isLoading = isConnecting || balance.loading || isMinting;
+  const isLoading = isConnecting || balance.isFetching || isMinting;
   const { switchChain } = useSwitchChain();
   const hasInsufficientBalance =
     !isLoading &&

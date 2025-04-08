@@ -13,13 +13,13 @@ import {
 import { createConfig, WagmiProvider } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { injected } from "wagmi/connectors";
-import { CAProvider } from "@arcana/ca-wagmi";
+import { CAProvider, Network } from "@arcana/ca-wagmi";
 // Configure wagmi
 const config = createConfig({
-  chains: [optimism],
+  chains: [optimism, scroll, mainnet, base, arbitrum, polygon, linea],
   transports: {
-    [mainnet.id]: http(),
     [scroll.id]: http(),
+    [mainnet.id]: http(),
     [base.id]: http(),
     [arbitrum.id]: http(),
     [optimism.id]: http(),
@@ -36,7 +36,13 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <CAProvider network={"dev"}>{children}</CAProvider>
+        <CAProvider
+          config={{
+            network: Network.CERISE,
+          }}
+        >
+          {children}
+        </CAProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );
