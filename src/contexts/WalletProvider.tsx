@@ -16,7 +16,7 @@ import { injected } from "wagmi/connectors";
 
 // Configure wagmi
 const config = createConfig({
-  chains: [optimism],
+  chains: [optimism, scroll, mainnet, base, arbitrum, polygon, linea],
   transports: {
     [mainnet.id]: http(),
     [scroll.id]: http(),
